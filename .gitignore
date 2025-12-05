@@ -1,0 +1,62 @@
+# ------------------------------
+# NODE & PNPM
+# ------------------------------
+node_modules/
+pnpm-lock.yaml
+
+# ------------------------------
+# BUILD OUTPUT
+# ------------------------------
+dist/
+build/
+.next/
+out/
+
+# ------------------------------
+# ENVIRONMENT FILES
+# ------------------------------
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.*
+
+# ------------------------------
+# LOGS
+# ------------------------------
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+*.log
+
+# ------------------------------
+# OS FILES
+# ------------------------------
+.DS_Store
+Thumbs.db
+
+# ------------------------------
+# IDE / EDITORS
+# ------------------------------
+.vscode/*     
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# ------------------------------
+# TEST ARTIFACTS
+# ------------------------------
+coverage/
+.nyc_output/
+
+# ------------------------------
+# NESTJS / PRISMA
+# ------------------------------
+generated/
+prisma/generated/
