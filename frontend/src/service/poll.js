@@ -1,4 +1,5 @@
 const baseUrl = "http://localhost:3000/polls"
+const token = localStorage.getItem("token")
 
 // Retourne tous les sondages
 export async function findAll(){
@@ -25,7 +26,10 @@ export async function findOne(id){
 export async function create(data){
     const response = await fetch(`${baseUrl}`,{
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(data)
     })
     if(!response.ok) throw new Error("Erreur lors de la création du sondage")
@@ -36,29 +40,49 @@ export async function create(data){
 export async function update(id,data){
     const response = await fetch(`${baseUrl}/${id}`,{
         method: "PATCH",
-        headers: {"Content-Type": "application/json"},
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(data)
     })
-    if(!response.ok) throw new Error("Erreur lors de la maj du sondage")
-    return response.json()
+    if(!response.ok){
+        const data = await response.json()
+        throw new Error(data.message)
+    } 
+    return await response.json()
 }
 
 // Supprimer un sondage
 export async function remove(id){
     const response = await fetch(`${baseUrl}/${id}`,{
         method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
     })
     if(!response.ok) throw new Error("Erreur lors de la suppréssion du sondage")
     return response.json()
 }
 
 // Voter
-export async function vote(optionId){
+export async function vote(optionId, userId){
     const response = await fetch(`${baseUrl}/vote`, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({optionId})
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({optionId, userId})
     })
-    if(!response.ok) throw new Error("Erreur lors du vote")
-    return response.json()
+    if(!response.ok){
+        const data = await response.json()
+        throw new Error(data.message)
+    }
+    return await response.json()
+}
+
+// Tous les votes
+export async function findAllVotes(){
+    const response = await fetch(`${baseUrl}/allVotes`)
+    if(!response.ok) throw new Error("Erreur lors de la récupération de tous les votes")
+    return await response.json()
 }

@@ -31,7 +31,8 @@ model Poll {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  options Option[]
+  options     Option[]
+  voteRecords Vote[]
 }
 
 model Option {
@@ -41,6 +42,41 @@ model Option {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  pollId Int
-  poll   Poll @relation(fields: [pollId], references: [id])
+  pollId    Int
+  poll      Poll @relation(fields: [pollId], references: [id])
+
+  voteRecords     Vote[]
+}
+
+enum UserRole {
+  BOSS
+  ADMIN
+  USER
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+
+  voteRecords     Vote[]
+}
+
+model Vote {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+
+  pollId    Int
+  poll      Poll     @relation(fields: [pollId], references: [id])
+
+  optionId  Int
+  option    Option   @relation(fields: [optionId], references: [id])
+
+  @@unique([userId, pollId]) // vote unique par utilisateur et par sondage
 }

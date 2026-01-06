@@ -27,6 +27,7 @@ Ce frontend React a pour rôle de :
 - Composants modulaires
 - Architecture claire
 - Fonctionne avec Backend NestJS associé port(3000)
+- React icons
 
 ## Installation et lancement
 - Installer les dépendances
@@ -44,39 +45,69 @@ pnpm run dev
 ```pgsql
 src/
  ├── service/
- │     ├── polls.js
+ │     ├── poll.js
+ │     ├── user.js
  │     └── options.js
  ├── components/
  │     ├── admin/
  │     │      ├── PollList.jsx
  │     │      ├── PollForm.jsx
+ │     │      ├── UserForm.jsx
+ │     │      ├── UserList.jsx
  │     │      ├── PollDetails.jsx
  │     │      └── OptionEditor.jsx
+ │     ├── context/
+ │     │      ├── AuthContext.jsx
+ │     ├── layout/
+ │     │      ├── AdminLayout.jsx
+ │     │      ├── AdminNavbar.jsx
+ │     │      ├── UserLayout.jsx
+ │     │      ├── UserNavbar.jsx
+ │     ├── pages/
+ │     │      ├── Login.jsx
+ │     │      ├── Profil.jsx
  │     ├── public/
  │     │      ├── Poll.jsx
  │     │      └── PublicPoll.jsx
+ │     ├── PrivateRoute.jsx
  ├── App.jsx
  ├── main.jsx
  └── index.css
 ```
 
 ## Routing
-- /admin          | Liste des sondages admin
-- /admin/create   | Formulaire de création
-- /admin/edit/:id | Formulaire d'édition
-- /admin/:id      | Détails sondage
-- /               | Interface publique : 1 sondage
-- /a              | Deuxième interface publique : 1 à plusieurs sondages
+### Boss
+- '/admin/users/create'     | Formulaire de création d'utilisateur
+- '/admin/users/allUsers'   | Liste des utilisateurs
+- '/admin/users/edit/:id'   | Formulaire de modification d'utilisateur
+- ''/admin/users/profil/:id | Profil d'un utilisateur
+### Boss et Admin
+- '/admin'          | Liste des sondages admin
+- '/admin/create'   | Formulaire de création
+- '/admin/:id'      | Détails sondage
+- '/admin/edit/:id' | Formulaire d'édition
+- '/accueil'        | Interface publique
+### Admin
+- '/profil' | Mon profil
+### User
+- '/'        | Interface publique
+- 'myProfil' | Mon profil
 
-## Interface Admin
-- PollList : Liste des sondages
-- PollForm : Formulaire de création/édition 
-- PollDetail : Détails d'un sondage
+## Contenu Component
+### admin
+- PollList     : Liste des sondages
+- PollForm     : Formulaire de création/édition 
+- PollDetail   : Détails d'un sondage
 - OptionEditor : Gestion des options (ajout/modification/activation/supression)
+- UserForm     : Formulaire de création/édition
+- UserList     : Liste des utilisateurs
+### context
+- AuthContext : Gestion globale de l’authentification (user, token, login, logout)
+### pages
+- Login  : Page de connexion
+- Profil : Page de profil
 
-## Amélioration possible (V4)
-- Authentification (JWT) votant/admin
-- Accès public sécurisé
+## Amélioration possible 
 - Poll landing page avec slug
 - Interface admin améliorée (recherche, filtres)
 - Tableau de bord stats

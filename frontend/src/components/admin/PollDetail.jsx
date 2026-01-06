@@ -74,11 +74,16 @@ export default function PollDetail(){
                 <h2 className="text-2xl font-semibold mb-4 text-white">Options</h2>
                 <ul className="space-y-2">
                     {
-                        poll.options.map((opt)=>(
-                            <li key={opt.id} className="p-3 bg-gray-100 rounded">
-                                {opt.label} - <strong>{opt.votes}</strong> votes
-                            </li>
-                        ))
+                        poll.options.map((opt)=>{
+                            const total = totalVotes
+                            const pourcentage = total === 0 ? 0 : Math.round((opt.votes / total) * 100)
+
+                            return(
+                                <li key={opt.id} className="p-3 bg-gray-100 rounded">
+                                    {opt.label} - <strong>{opt.votes}</strong> votes | <strong>{pourcentage}</strong>%
+                                </li>
+                            )
+                        })
                     }
                 </ul>
             </div>

@@ -1,4 +1,4 @@
-# Mini Voting App – Fullstack Project (V3)
+# Mini Voting App – Fullstack Project (V5)
 Application de sondages multi-question développée avec :
 
 - Backend : NestJS + Prisma + MySQL

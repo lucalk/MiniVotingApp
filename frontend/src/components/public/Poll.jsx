@@ -1,27 +1,37 @@
-import { useEffect, useState } from "react";
-import { findAllWithOptions, vote } from "../../service/poll";
+import { useContext, useEffect, useState } from "react";
+import { findAllWithOptions, vote, findAllVotes } from "../../service/poll";
+import { AuthContext } from "../../context/AuthContext";
 
 export default function Poll(){
     const [polls,setPolls] = useState([])
     const [votingId,setVotingId] = useState(null)
-
+    const { user } = useContext(AuthContext)
+    const [votes,setVotes] = useState([])
+    const [move,setMove] = useState(false)
 
     const fetchPolls = async() => {
         try{
             const response = await findAllWithOptions()
-            // console.log("LES SONDAGES : ", response)
             const validPolls = response.filter((poll) => poll.status === "PUBLISHED" && poll.isActive === true)
-            console.log(validPolls)
             setPolls(validPolls)
             return true
         }catch(error){
-            console.log(error.message)
+            alert(error.message)
+        }
+    }
+
+    const fetchAllVotes= async() => {
+        try{
+            const response = await findAllVotes()
+            setVotes(response)
+        }catch(error){
             alert(error.message)
         }
     }
 
     useEffect(()=>{
         fetchPolls()
+        fetchAllVotes()
     },[])
 
     const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -30,14 +40,19 @@ export default function Poll(){
         try{
             setVotingId(optionId)
             await wait(500)
-            await vote(optionId)
+            await vote(optionId, user.id)
             await fetchPolls()
+            setMove(!move)
         }catch(error){
             alert(error.message)
         }finally{
             setVotingId(null)
         }
     }
+
+    useEffect(()=>{
+        fetchAllVotes()
+    },[move]) 
 
     const totalVotes = (poll) => {
         if(!poll?.options) return 0
@@ -66,10 +81,17 @@ export default function Poll(){
                                     </p>
 
                                     {/* Les options */}
-                                    <div className="grid grid-cols-4 gap-4">
+                                    <div className={`grid ${poll.options.length > 4 ? "grid-cols-4" : `grid-cols-${poll.options.length}`} gap-2 `}>
                                         {
                                             poll.options.map((option)=>{
                                                 const pourcentage = total === 0 ? 0 : Math.round((option.votes / total) * 100)
+                                                const hasVotedOption = votes.some(
+                                                    vote=>
+                                                        vote.pollId === poll.id &&
+                                                        vote.optionId === option.id &&
+                                                        vote.userId === user.id
+                                                )
+                                                const btnColor = hasVotedOption ? "bg-green-500 hover:bg-green-700" : "bg-blue-500"
                                                 
                                                 return (
                                                     <div
@@ -90,7 +112,8 @@ export default function Poll(){
                                                         <button
                                                             disabled={votingId === option.id || !option.isActive}
                                                             onClick={()=>handleVote(option.id)}
-                                                            className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed"
+                                                            // className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed"
+                                                            className={`w-full py-2 rounded-lg ${btnColor} hover:bg-blue-700 disabled:cursor-not-allowed`}
                                                             >
                                                                 {votingId === option.id ? "Vote en cours..." : "Voter"}
                                                             </button>

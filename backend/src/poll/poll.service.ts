@@ -1,11 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Poll, Option, PollStatus } from 'generated/prisma/client';
+import { Poll, Option, PollStatus, Vote } from 'generated/prisma/client';
 import { CreatePollDto } from './dto/create-poll.dto';
 import { CreateOptionDto } from './dto/create-option.dto';
 import { UpdatePollDto } from './dto/update-poll.dto';
 import { UpdateOptionDto } from './dto/update-option.dto';
-
 
 @Injectable()
 export class PollService {
@@ -63,6 +62,18 @@ export class PollService {
         return poll
     }
 
+    // Retourne tous les votes
+    async findVotes(){
+        return await this.prisma.vote.findMany({
+            select: {
+                id: true,
+                optionId: true,
+                pollId: true,
+                userId: true
+            }
+        })
+    }
+
     // Maj un sondage
     async update(id: number, updatePollDto: UpdatePollDto) {
         await this.ensurePollExists(id)
@@ -94,6 +105,10 @@ export class PollService {
     // Supprimer un sondage
     async remove(id: number) {
         await this.ensurePollExists(id)
+
+        await this.prisma.vote.deleteMany({
+            where: { pollId: id }
+        })
 
         await this.prisma.option.deleteMany({
             where: { pollId: id }
@@ -143,7 +158,7 @@ export class PollService {
     }
 
     // Vote pour une option
-    async vote(optionId: number): Promise<{ question: string; options: Option[]} > {
+    async vote(optionId: number, userId: number): Promise<{ question: string; options: Option[]} > {
         const option = await this.prisma.option.findUnique({
             where: { id: optionId },
             include: { poll: true }
@@ -162,12 +177,28 @@ export class PollService {
             throw new BadRequestException("Ce sondage n'est pas ouvert aux votes (non publiée ou inactif)")
         }
 
+        const voteExisting = await this.prisma.vote.findUnique({
+            where: { userId_pollId: { userId, pollId: option.pollId } }
+        })
+
+        if(voteExisting){
+            throw new BadRequestException("Vous avez déjà voté dans ce sondage")
+        }
+
+        await this.prisma.vote.create({
+            data: {
+                userId,
+                pollId: option.pollId,
+                optionId: option.id
+            }
+        })
+
         await this.prisma.option.update({
             where: { id: optionId },
             data: {
                 votes: { increment: 1 }
             }
-        })
+        }) 
 
         const pollWithOptions = await this.prisma.poll.findUnique({
             where: { id: option.pollId },

@@ -40,7 +40,6 @@ export default function PollForm(){
         e.preventDefault()
         try{
             if(isEdit){
-                console.log("LE SONDAGE : ",form)
                 await update(id,form)
             }else{
                 await create(form)

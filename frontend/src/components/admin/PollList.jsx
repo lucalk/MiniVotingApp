@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { findAll, remove } from "../../service/poll";
 import { useNavigate } from "react-router-dom";
 
+import { MdDelete } from "react-icons/md";
+import { FiEdit } from "react-icons/fi";
+import { LuNotepadText } from "react-icons/lu";
+
 export default function PollList(){
     const [polls,setPolls] = useState([])
     const navigate = useNavigate()
@@ -9,7 +13,6 @@ export default function PollList(){
     const fetchPolls = async () => {
         try{
             const response = await findAll()
-            console.log("RESPONSE POLLS : ", response)
             setPolls(response)
         }catch(error){
             console.error(error.message)
@@ -37,8 +40,8 @@ export default function PollList(){
 
             <button 
                 onClick={()=> navigate("/admin/create")}
-                className="px-4 py-2 bg-blue-600 text-white rounded-[10px] mb-4">
-                    + Nouveau sondage
+                className="p-2 px-4 bg-black rounded-[20px] mb-4 text-white">
+                    Créer un nouveau sondage
             </button>
 
             <div className="space-y-4">

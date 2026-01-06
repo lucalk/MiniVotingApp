@@ -7,22 +7,32 @@ Le but : fournir une API simple, propre et réutilisable pour permettre à un fr
 
 ## Objectif
 Créer une API REST avec NestJS permettant :
-- Créer, modifier et supprimer un sondage
-- Gérer l'état et le statut du sondage (brouillon, public ou archivé)
-- Créer, modifier et supprimer l'option
-- Récupérer un ou plusieurs sondages avec ses options
-- Voter pour l'une des options
-- Retourner les résultats instantanément
+- Gérer les sondages (création, modification, suppression)
+- Gérer le cycle de vie d'un sondage (brouillon, public ou archivé)
+- Gérer les options d'un sondage
+- Authentifier les utilisateurs
+- Gérer les rôles (ADMIN/USER)
+- Autoriser un seul vote par utilisateur et par sondage
+- Garantir la cohérence métier des votes
+- Fournir des résultats clairs et exploitables par le frontend
 - Gérer proprement la validation des données
+
+## Rôles et permissions
+ADMIN : Gestion complète (sondages, options, utilisateurs)
+USER  : COnsultation et vote sur les sondages actifs
+
+- Les routes sont protégées par JWT + Guards + rôles
 
 ## Stack technique
 - NestJS => Structure backend
-- TypeScript => Typage
+- TypeScript => Typage strict
 - Class-validator => Validation stricte des DTO
-- ValidationPipe => Sécurité  
-- Prisma 6 => ORM 
-- MySQL => Base relationnelle
-- CORS enabled => Communication React -> Nest
+- ValidationPipe => Sécurité des entrées
+- Prisma 6 => Accès base de données 
+- MySQL => Base de données relationnelle
+- CORS enabled => Communication React <-> Nest
+- JWT => Authentification sécurisée
+- Passport.js Stratégie JWT
 
 ## Installation et lancement
 - Installer les dépendances
@@ -36,39 +46,87 @@ pnpm start:dev
 - Backend : http://localhost:3000
 - Frontend React : http://localhost:5173
 
+
+## Configuration (.env)
+Variables attendues : 
+- DATABASE_URL
+- JWT_SECRET 
+
 ## Architecture du projet
 ```cpp
 src/
- ├─ prisma/
- │   ├─ prisma.module.ts
- │   └─ prisma.service.ts
- ├─ poll/
- │   ├─ poll.module.ts
- │   ├─ poll.controller.ts
- │   ├─ poll.service.ts
- │   └─ dto/
- │      ├─ create-option.dto.ts
- │      ├─ create-poll.dto.ts
- │      ├─ update-option.dto.ts
- │      ├─ update-poll.dto.ts
- │      └─ vote.dto.ts
- ├─ app.module.ts
- └─ main.ts
+├── auth/
+│   ├── auth.controller.ts
+│   ├── auth.module.ts
+│   ├── auth.service.ts
+│   ├── jwt-auth.guard.ts
+│   ├── jwt.strategy.ts
+│   ├── roles.decorator.ts
+│   ├── roles.guard.ts
+│   └── dto/
+│       └── login.dto.ts
+│
+├── poll/
+│   ├── poll.controller.ts
+│   ├── poll.module.ts
+│   ├── poll.service.ts
+│   └── dto/
+│       ├── create-poll.dto.ts
+│       ├── update-poll.dto.ts
+│       ├── create-option.dto.ts
+│       ├── update-option.dto.ts
+│       └── vote.dto.ts
+│
+├── user/
+│   ├── user.controller.ts
+│   ├── user.module.ts
+│   ├── user.service.ts
+│   └── dto/
+│       ├── create-user.dto.ts
+│       └── update-user.dto.ts
+│
+├── prisma/
+│   ├── prisma.module.ts
+│   └── prisma.service.ts
+│
+├── app.module.ts
+├── app.controller.ts
+├── app.service.ts
+└── main.ts
 ```
 
 ## Modèle de données (Prisma)
+Poll : 
+- Sondage principal
+- Gère l'état, la visibilité et les options
+
+Option :
+- Choix d'un sondage
+- Comptabilise les votes
+
+Vote : 
+- Historique des votes utilisateurs
+- Empêche les votes multiples
+
 ```prisma
+enum PollStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model Poll {
-  id          Int         @id @default(autoincrement())
-  title       String
+  id          Int        @id @default(autoincrement())
+  title       String     
   question    String
   description String?
-  status      PollStatus  @default(DRAFT)
-  isActive    Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  status      PollStatus @default(DRAFT)
+  isActive    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   options     Option[]
+  voteRecords Vote[]
 }
 
 model Option {
@@ -78,19 +136,51 @@ model Option {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  pollId  Int
-  poll    Poll   @relation(fields: [pollId], references: [id])
+  pollId    Int
+  poll      Poll @relation(fields: [pollId], references: [id])
+
+  voteRecords     Vote[]
 }
 
-enum PollStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
+enum UserRole {
+  BOSS
+  ADMIN
+  USER
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+
+  voteRecords     Vote[]
+}
+
+model Vote {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+
+  pollId    Int
+  poll      Poll     @relation(fields: [pollId], references: [id])
+
+  optionId  Int
+  option    Option   @relation(fields: [optionId], references: [id])
+
+  @@unique([userId, pollId]) // vote unique par utilisateur et par sondage
 }
 ```
 
 ## API Endpoints
-1. Sondages
+1. Authentification
+- POST   | /auth/login | Connexion utilisateur
+
+2. Sondages
 - GET    | /polls     | Liste des sondages
 - GET    | /polls/all | Liste des sondages avec leurs options 
 - GET    | /polls/:id | Détail d'un sondage
@@ -98,12 +188,12 @@ enum PollStatus {
 - PATCH  | /polls/:id | Modifier un sondage
 - DELETE | /polls/:id | Supprimer un sondage
 
-2. Options
+3. Options
 - POST   | /polls/:id/options       | Ajouter une option
 - PATCH  | /polls/options/:optionId | Modifier une option
 - DELETE | /polls/options/:optionId | Supprimer une option 
 
-3. Vote
+4. Vote
 - POST   | /polls/vote | Voter pour une option
 
 Règles métier vote : 
@@ -111,12 +201,7 @@ Règles métier vote :
 - Le sondage doit être actif (isActive = true)
 - L'option doit être active (isActive = true)
 
-## V4
-- Comptes utilisateurs
-- Rôles : admin - voter
-- Auth JWT
-- Gestion sécurisée des votes
-- Historique complet 
+## Amélioration possible 
 - WebSocket (temps réel)
 - Page publique via slug (/poll/:slug)
 
